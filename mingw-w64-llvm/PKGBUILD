@@ -10,10 +10,14 @@
 if [[ $MINGW_PACKAGE_PREFIX == *-clang-* ]]; then
   _clangprefix=1
   _compiler=clang
-  _pgo=1
+  # jank: speed up build time
+  #_pgo=1
 else
   _compiler=clang
 fi
+
+# jank: speed up build time
+# options=('!strip')
 
 _realname=llvm
 pkgbase=mingw-w64-${_realname}
@@ -27,9 +31,11 @@ pkgname=("${MINGW_PACKAGE_PREFIX}-llvm"
          "${MINGW_PACKAGE_PREFIX}-compiler-rt"
          $( (( _clangprefix )) && echo "${MINGW_PACKAGE_PREFIX}-gcc-compat" )
          "${MINGW_PACKAGE_PREFIX}-lld")
-_pkgver=22.1.8
+_pkgver=22.0.0
 pkgver=${_pkgver/-/}
-pkgrel=1
+# jank: do not change the following line, it's pattern matched by the
+# bin/build-clang script
+pkgrel=0.jank
 pkgdesc="C language family frontend for LLVM (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
@@ -55,8 +61,13 @@ makedepends=($([[ "$_compiler" == "clang" ]] && echo \
              "${MINGW_PACKAGE_PREFIX}-git"
              )
 _url=https://github.com/llvm/llvm-project/releases/download/llvmorg-${_pkgver}
-_pkgfn=llvm-project-${_pkgver}.src
-source=("${_url}/${_pkgfn}.tar.xz"{,.sig}
+source=(# "${_url}/llvm-${_pkgver}.src.tar.xz"{,.sig}
+        # "${_url}/clang-${_pkgver}.src.tar.xz"{,.sig}
+        # "${_url}/clang-tools-extra-${_pkgver}.src.tar.xz"{,.sig}
+        # "${_url}/compiler-rt-${_pkgver}.src.tar.xz"{,.sig}
+        # "${_url}/lld-${_pkgver}.src.tar.xz"{,.sig}
+        # "${_url}/cmake-${_pkgver}.src.tar.xz"{,.sig}
+        # "${_url}/third-party-${_pkgver}.src.tar.xz"{,.sig}
         # 0001-0099 -> llvm
         "0001-Fix-GetHostTriple-for-mingw-w64-in-msys.patch"
         "0002-Fix-Findzstd-on-MINGW.patch"
@@ -69,8 +80,20 @@ source=("${_url}/${_pkgfn}.tar.xz"{,.sig}
         # 0401-0499 -> clang-tools-extra
         # 0901-0999 -> whole tree
         )
-sha256sums=('922f1817a0df7b1489272d18134ee0087a8b068828f87ac63b9861b1a9965888'
-            'SKIP'
+sha256sums=(# 'd9022ddadb40a15015f6b27e6549a7144704ded8828ba036ffe4b8165707de21'
+            # 'SKIP'
+            # '6090e3f23720d003cdd84483a47d0eec6d01adbb5e0c714ac0c8b58de546aa62'
+            # 'SKIP'
+            # '6ddb7e731bf09ab821132e2e8a3c706b6d9c52c92a9ce9a9ed0976a9c6c28829'
+            # 'SKIP'
+            # 'dd54ae21aee1780fac59445b51ebff601ad016b31ac3a7de3b21126fd3ccb229'
+            # 'SKIP'
+            # 'd9524c5ee952500a2af92c27042a0d90ab089962af47816d4c85d0ebf76373d1'
+            # 'SKIP'
+            # '85735f20fd8c81ecb0a09abb0c267018475420e93b65050cc5b7634eab744de9'
+            # 'SKIP'
+            # '7fe99424384aea529ffaeec9cc9dfb8b451fd1852c03fc109e426fe208a1f1a7'
+            # 'SKIP'
             'eb03df53671df6627768141b3aaa76abe176a14e5e47911c97bec544387c4aff'
             'd77d47e37e4948f5c01ae8bc05fb4e879b6516132c5a60c7bc820c9cbbb39668'
             '790eb0fccb4ef29c3795bceb8a62c8f4ecd0bdd6c49b2812352b04cfbc552342'
@@ -100,8 +123,17 @@ revert_patch_with_msg() {
 }
 
 prepare() {
-  plain "Extracting ${_pkgfn}.tar.xz due to symlink(s) without pre-existing target(s)"
-  ${MINGW_PREFIX}/bin/bsdtar -xJf "${srcdir}"/${_pkgfn}.tar.xz -C "${srcdir}" || true
+  cd "${srcdir}"
+  # plain "Extracting clang-${_pkgver}.src.tar.xz due to symlink(s) without pre-existing target(s)"
+  # tar -xJf "${srcdir}"/clang-${_pkgver}.src.tar.xz -C "${srcdir}" || true
+
+  # plain "Extracting llvm-${_pkgver}.src.tar.xz due to symlink(s) without pre-existing target(s)"
+  # tar -xJf "${srcdir}"/llvm-${_pkgver}.src.tar.xz -C "${srcdir}" || true
+
+  # # Rename Directories
+  # for pkg in llvm clang clang-tools-extra compiler-rt lld cmake third-party; do
+  #   mv ${pkg}-${_pkgver}.src ${pkg}
+  # done
 
   # Patch llvm
   cd "${srcdir}"/${_pkgfn}/llvm
@@ -458,6 +490,14 @@ package_llvm-tools() {
   rm -rf "${srcdir}"/llvm-libs
   mkdir -p "${srcdir}"/llvm-libs/${MINGW_PREFIX}/bin
   mv -f "${pkgdir}"${MINGW_PREFIX}/bin/lib{LLVM-*,LTO,Remarks}.dll "${srcdir}"/llvm-libs/${MINGW_PREFIX}/bin
+
+  # libLLVM-<ver>.dll.a -> libLLVM.dll.a
+  cd "${pkgdir}${MINGW_PREFIX}/lib"
+  for f in libLLVM-*.dll.a; do
+    ln -s "$f" libLLVM.dll.a
+    break
+  done
+
   # remove duplicate headers already in llvm package
   rm -r "${pkgdir}"${MINGW_PREFIX}/include/llvm-c
 
