@@ -1,16 +1,16 @@
-### Modified for jank to support building from an existing source checkout.
+### Modified for jank to support building from an existing source checkout at src/.
 # Lines starting with ### mark changes from upstream.
 #
 # Before building, replace the following placeholder values:
 #   PLACEHOLDER-PKGVER  - LLVM version (e.g. 22.1.8 or 22.1.0-rc1)
 #   PLACEHOLDER-PKGREL  - build identifier suffix (e.g. jank_8164f1a)
-#   PLACEHOLDER-PKGFN   - source dir relative to makepkg's srcdir (e.g. ".")
 #
 # Other modifications done in this file:
 #   1. PGO commented out to speed up build time
 #   2. options=('!strip') available (uncomment to speed up build time)
-#   3. Tarball download/sha256/extraction disabled
-#   4. package_llvm-tools: unversioned libLLVM.dll.a symlink added
+#   3. _pkgfn hardcoded to ".", expects LLVM source directly in srcdir (i.e. src/)
+#   4. Tarball download/sha256/extraction disabled
+#   5. package_llvm-tools: unversioned libLLVM.dll.a symlink added
 
 # Maintainer: Martell Malone <martellmalone@gmail.com>
 # Maintainer: Alexey Pavlov <alexpux@gmail.com>
@@ -77,9 +77,9 @@ makedepends=($([[ "$_compiler" == "clang" ]] && echo \
              "${MINGW_PACKAGE_PREFIX}-git"
              )
 _url=https://github.com/llvm/llvm-project/releases/download/llvmorg-${_pkgver}
-### placeholder: replace with source directory name before building. Upstream value was:
+### hardcoded to ".", expects LLVM source directly in srcdir (i.e. src/). Upstream value was:
 ###_pkgfn=llvm-project-${_pkgver}.src
-_pkgfn=PLACEHOLDER-PKGFN
+_pkgfn=.
 ### source tarball disabled: expects source provided externally as git checkout
 source=(###"${_url}/${_pkgfn}.tar.xz"{,.sig}
         # 0001-0099 -> llvm
